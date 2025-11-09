@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TrustNet AI - Media Verifier</title>
+    <style>
+        :root {
+            --critical: #dc2626;
+            --high: #ef4444;
+            --medium: #f59e0b;
+            --low: #10b981;
+            --minimal: #059669;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 450px;
+            min-height: 600px;
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 24px 20px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        
+        .tagline {
+            font-size: 13px;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+        
+        .status-bar {
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--high);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.connected {
+            background: var(--low);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .tabs {
+            display: flex;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        
+        .text-input {
+            width: 100%;
+            min-height: 140px;
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            resize: vertical;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-card);
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .file-upload.drag-over {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        
+        .btn-verify {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-verify:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-verify:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            display: none;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-header {
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .result-emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .result-verdict {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .result-score {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .result.critical .result-header { background: var(--critical); }
+        .result.high .result-header { background: var(--high); }
+        .result.medium .result-header { background: var(--medium); color: #1c1917; }
+        .result.low .result-header { background: var(--low); color: white; }
+        .result.minimal .result-header { background: var(--minimal); color: white; }
+        
+        .result-content {
+            padding: 20px;
+            background: var(--bg-card);
+        }
+        
+        .detail-grid {
+            display: grid;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .detail-label {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .risk-badge {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .risk-critical { background: var(--critical); color: white; }
+        .risk-high { background: var(--high); color: white; }
+        .risk-medium { background: var(--medium); color: #1c1917; }
+        .risk-low { background: var(--low); color: white; }
+        .risk-minimal { background: var(--minimal); color: white; }
+        
+        .reasoning-box {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .reasoning-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+        }
+        
+        .reasoning-text {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+        
+        .example-note {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🛡️ TrustNet AI</div>
+        <div class="tagline">Detecting AI-Generated & Manipulated Media</div>
+    </div>
+    
+    <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting to verification system...</span>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab active" data-tab="text">📝 Text</button>
+        <button class="tab" data-tab="image">🖼️ Image</button>
+        <button class="tab" data-tab="video">🎥 Video</button>
+    </div>
+    
+    <div class="content">
+        <!-- Text Verification Tab -->
+        <div class="tab-content active" id="text-tab">
+            <div class="input-group">
+                <label class="input-label">Paste Text to Verify</label>
+                <textarea 
+                    class="text-input" 
+                    id="textInput"
+                    placeholder="Paste any text: social media posts, news articles, political statements...
+
+Example: 'It is important to note that we must delve into comprehensive solutions to leverage robust paradigms for future growth.'"
+                ></textarea>
+            </div>
+            
+            <button class="btn btn-verify" id="verifyTextBtn">
+                🔍 Verify Text Authenticity
+            </button>
+            
+            <div class="example-note">
+                <strong>💡 Example:</strong> Before sharing a "politician statement," TrustNet will say:
+                <br>"🚨 92% chance this text was AI-generated (GPT-4 patterns detected)"
+            </div>
+        </div>
+        
+        <!-- Image Verification Tab -->
+        <div class="tab-content" id="image-tab">
+            <div class="input-group">
+                <label class="input-label">Upload Image to Verify</label>
+                <div class="file-upload" id="imageUpload">
+                    <div class="upload-icon">🖼️</div>
+                    <div>Click or drag image here</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        JPG, PNG, WEBP (max 10MB)
+                    </div>
+                </div>
+                <input type="file" class="file-input" id="imageInput" accept="image/*">
+            </div>
+            
+            <div style="text-align: center; color: var(--text-muted); margin: -8px 0 12px;">OR</div>
+            
+            <div class="input-group">
+                <label class="input-label">Paste Image URL</label>
+                <input 
+                    type="url"
+                    class="text-input" 
+                    id="imageUrlInput"
+                    style="min-height: auto; height: 48px;"
+                    placeholder="https://example.com/image.jpg"
+                />
+            </div>
+            
+            <button class="btn btn-verify" id="verifyImageBtn">
+                🔍 Verify Image Authenticity
+            </button>
+            
+            <div class="example-note">
+                <strong>🎨 Detects:</strong> Midjourney, DALL-E 3, Stable Diffusion, Photoshop AI
+            </div>
+        </div>
+        
+        <!-- Video Verification Tab -->
+        <div class="tab-content" id="video-tab">
+            <div class="input-group">
+                <label class="input-label">Video URL or Description</label>
+                <textarea 
+                    class="text-input" 
+                    id="videoInput"
+                    style="min-height: 100px;"
+                    placeholder="Enter video URL or describe the video content to analyze for deepfakes..."
+                ></textarea>
+            </div>
+            
+            <button class="btn btn-verify" id="verifyVideoBtn">
+                🔍 Verify Video Authenticity
+            </button>
+            
+            <div class="example-note">
+                <strong>🎬 Detects:</strong> Sora, Deepfakes, Runway, Synthesia
+            </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div id="loadingText">Analyzing content...</div>
+        </div>
+        
+        <!-- Results -->
+        <div class="result" id="result">
+            <div class="result-header">
+                <div class="result-emoji" id="resultEmoji">🔍</div>
+                <div class="result-verdict" id="resultVerdict">Analysis Result</div>
+                <div class="result-score" id="resultScore">Authenticity Score: --</div>
+            </div>
+            <div class="result-content">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Media Type</span>
+                        <span class="detail-value" id="resultType">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">AI Generated</span>
+                        <span class="detail-value" id="resultGenerated">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Detected Model</span>
+                        <span class="detail-value" id="resultModel">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Confidence</span>
+                        <span class="detail-value" id="resultConfidence">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Risk Level</span>
+                        <span class="detail-value">
+                            <span id="resultRisk" class="risk-badge">-</span>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">AI Models Used</span>
+                        <span class="detail-value" id="resultModelsUsed" style="font-size: 11px;">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Consensus</span>
+                        <span class="detail-value" id="resultConsensus" style="font-size: 12px; color: var(--primary);">-</span>
+                    </div>
+                </div>
+                
+                <div class="reasoning-box">
+                    <div class="reasoning-title">🧠 Analysis Details</div>
+                    <div class="reasoning-text" id="resultReasoning" style="white-space: pre-wrap; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px;">
+                        No analysis performed yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

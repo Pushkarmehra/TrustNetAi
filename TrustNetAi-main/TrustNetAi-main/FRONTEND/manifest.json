@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "TrustNet AI",
+  "version": "1.0.0",
+  "description": "AI Content Detection",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["http://localhost:8000/*"],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "TrustNet AI"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
